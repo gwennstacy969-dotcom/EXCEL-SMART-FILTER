@@ -1,0 +1,13 @@
+{
+  "name": "excel-smart-filter",
+  "version": "2.0.0",
+  "description": "Aplikasi Web & Mobile Pemfilter Data Excel Bulanan Fleksibel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["excel", "smart-filter", "responsive", "pwa"],
+  "author": "Antigravity",
+  "license": "MIT"
+}
+

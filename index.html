@@ -1,0 +1,2571 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>EXCEL SMART FILTER - Responsive Desktop & Mobile App</title>
+  <meta name="description" content="Aplikasi pemfilter dan pemecah data Excel bulanan fleksibel sesuai format asli Excel tanpa merusak tata letak.">
+  
+  <!-- SheetJS Library (Offline) -->
+  <script src="libs/xlsx.full.min.js"></script>
+  <!-- JSZip Library for ZIP creation (Offline) -->
+  <script src="libs/jszip.min.js"></script>
+  <!-- Pretrip Excel XML Template for 100% Identical Kop & Styling -->
+  <script src="libs/pretrip_template.js"></script>
+  
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            excel: {
+              green: '#107c41',
+              dark: '#0b5a2f',
+              border: '#d4d4d4',
+              bg: '#f3f2f1'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Custom Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.3);
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.5);
+    }
+
+    /* Excel Native Popup Styling */
+    .excel-popup {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22), 0 3px 10px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Tree-line styling like native Excel */
+    .tree-branch {
+      position: relative;
+    }
+    .tree-branch::before {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: -6px;
+      bottom: 10px;
+      width: 1px;
+      border-left: 1px dotted #94a3b8;
+    }
+    .tree-branch::after {
+      content: '';
+      position: absolute;
+      left: 7px;
+      top: 11px;
+      width: 8px;
+      height: 1px;
+      border-top: 1px dotted #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- ===================================================================== -->
+  <!-- TOP NAVBAR -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-40 bg-white/95 dark:bg-slate-800/95 backdrop-blur border-b border-slate-200 dark:border-slate-700 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Title -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg sm:text-xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-emerald-800 dark:from-white dark:to-emerald-400 bg-clip-text text-transparent">
+                EXCEL SMART FILTER
+              </h1>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                Format Asli & Pemecah File ZIP
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">
+              Filter harian/mingguan • Pecah per hari ke ZIP • Format & kop surat Excel asli tetap utuh
+            </p>
+          </div>
+        </div>
+
+        <!-- Action Buttons Right -->
+        <div class="flex items-center gap-2">
+          <!-- Upload custom file button (Native Label Wrapping Input) -->
+          <label for="excelFileInput" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm cursor-pointer transition transform active:scale-95" title="Pilih file Excel dari komputer Anda">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+            </svg>
+            <span>Pilih File Excel</span>
+            <input id="excelFileInput" type="file" accept=".xlsx, .xls, .xlsm, .csv" class="sr-only">
+          </label>
+
+          <!-- Reload Pretrip file -->
+          <button id="btnReloadPretrip" type="button" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 shadow-xs transition" title="Buka File Contoh Pretrip Inspection">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+            <span class="hidden sm:inline">Contoh Pretrip</span>
+          </button>
+
+          <!-- Toggle Theme (Dark/Light) -->
+          <button id="btnThemeToggle" class="p-2 rounded-lg text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors" title="Ganti Tema Gelap/Terang">
+            <svg id="iconSun" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+            <svg id="iconMoon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+            </svg>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN CONTAINER -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col gap-4">
+
+    <!-- KPI & FILE STATUS BANNER -->
+    <section class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- File metadata -->
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xl shadow-sm">
+          📊
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h2 id="fileNameText" class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 truncate max-w-xs sm:max-w-md">
+              Belum Ada File Dipilih
+            </h2>
+            <div id="sheetSelectWrap" class="hidden items-center gap-1.5 text-xs">
+              <span class="text-slate-400 font-medium">Sheet:</span>
+              <select id="sheetSelect" class="px-2 py-0.5 rounded text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 outline-none focus:ring-1 focus:ring-emerald-500">
+                <option value="">(Pilih Sheet)</option>
+              </select>
+              <span id="sheetBadge" class="hidden"></span>
+            </div>
+            <div id="headerRowWrap" class="hidden items-center gap-1.5 text-xs">
+              <span class="text-slate-400 font-medium">Header:</span>
+              <input id="inputHeaderRow" type="number" min="1" max="50" value="1" title="Baris Header Excel (Ubah jika tabel Anda mulai di baris lain)" class="w-12 px-1 py-0.5 text-center text-xs font-bold rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 outline-none focus:ring-1 focus:ring-emerald-500">
+            </div>
+          </div>
+          <p id="fileRowSummary" class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Silakan pilih file Excel bulanan Anda (.xls, .xlsx, .xlsm, .csv) untuk mulai memfilter
+          </p>
+        </div>
+      </div>
+
+      <!-- Live Count Stats -->
+      <div class="flex items-center gap-4 sm:gap-6">
+        <div class="text-right">
+          <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Hasil Filter</p>
+          <p class="text-2xl sm:text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+            <span id="kpiMatchedCount">0</span>
+            <span class="text-xs font-normal text-slate-400">/ <span id="kpiTotalCount">0</span></span>
+          </p>
+        </div>
+
+        <div class="h-10 w-px bg-slate-200 dark:bg-slate-700"></div>
+
+        <div id="kpiBadgesWrap" class="hidden sm:flex items-center gap-1.5 sm:gap-2 text-xs font-bold">
+          <div class="px-2.5 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            GO: <span id="kpiCountGO">0</span>
+          </div>
+          <div class="px-2.5 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/60 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            NO GO: <span id="kpiCountNoGO">0</span>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- EMPTY UPLOAD HERO (MUNCUL KETIKA BELUM ADA FILE EXCEL YANG DIPILIH) -->
+    <div id="emptyUploadHero" class="bg-white dark:bg-slate-800 rounded-2xl border-2 border-dashed border-emerald-400 dark:border-emerald-600 p-8 sm:p-14 text-center flex flex-col items-center justify-center gap-4 shadow-sm my-2">
+      <div class="w-20 h-20 rounded-3xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-4xl shadow-sm border border-emerald-200 dark:border-emerald-800">
+        📂
+      </div>
+      <div>
+        <h3 class="text-lg sm:text-xl font-extrabold text-slate-800 dark:text-slate-100">
+          Silakan Masukkan File Excel Bulanan Anda
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-1">
+          Pilih file Excel (.xls, .xlsx, .xlsm, .csv) dari komputer Anda untuk mulai memfilter data tanpa merusak tata letak, rumus, maupun kop aslinya.
+        </p>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap justify-center mt-2">
+        <label for="excelFileInputHero" class="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md cursor-pointer transition transform active:scale-95 flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+          <span>Pilih File Excel dari Komputer</span>
+          <input id="excelFileInputHero" type="file" accept=".xlsx, .xls, .xlsm, .csv" class="sr-only">
+        </label>
+        <button id="btnLoadPretripHero" type="button" class="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs sm:text-sm border border-slate-300 dark:border-slate-600 transition flex items-center gap-2">
+          <span>📊 Buka Contoh Pretrip Inspection</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- WRAPPER UNTUK SECTION 1, 2, DAN 3 (MUNCUL OTOMATIS SETELAH FILE DIPILIH) -->
+    <div id="filterAndDataContainer" class="hidden flex-col gap-4">
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 1: FILTER PERIODE TANGGAL & PEMECAH FILE (ZIP) -->
+    <!-- ===================================================================== -->
+    <section class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 sm:p-5 shadow-sm flex flex-col gap-4">
+      
+      <!-- Header of Date Section -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-700/60">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-lg border border-emerald-200 dark:border-emerald-800/60">
+            📅
+          </div>
+          <div>
+            <h3 class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <span>Filter Periode Tanggal & Pemecahan File Excel</span>
+              <span id="dateFilterActiveBadge" class="text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800">
+                Semua Tanggal
+              </span>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 flex-wrap">
+              <span>Filter data per hari, per minggu, atau rentang bebas • Bisa langsung dipecah per hari ke ZIP</span>
+              <span class="inline-flex items-center gap-1 font-semibold text-slate-600 dark:text-slate-300">
+                <span>(Kolom Tanggal:</span>
+                <select id="selectDateColumn" class="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 outline-none text-emerald-600 dark:text-emerald-400 font-bold focus:ring-1 focus:ring-emerald-500">
+                  <option value="TANGGAL">TANGGAL</option>
+                </select>
+                <span>)</span>
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <!-- BATCH EXPORT BUTTONS (ZIP & EXCEL) -->
+        <div class="flex items-center gap-2 flex-wrap">
+          <button id="btnSplitDailyZip" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-sm transition" title="Pecah seluruh 32 hari ke dalam file Excel harian terformat dan unduh sebagai 1 file ZIP">
+            <span>📦</span>
+            <span>Pecah Per Hari & Unduh ZIP</span>
+          </button>
+          <button id="btnSplitWeeklyZip" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition" title="Pecah menjadi file mingguan dan unduh sebagai 1 file ZIP">
+            <span>📦</span>
+            <span class="hidden sm:inline">Pecah Per Minggu & Unduh ZIP</span>
+            <span class="sm:hidden">ZIP Mingguan</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode Selector Tabs (Semua / Per Hari / Per Minggu / Rentang) -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        
+        <!-- Tab 1: Semua Tanggal -->
+        <button id="tabDateAll" class="date-tab-btn flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition bg-emerald-600 text-white border-emerald-600 shadow-sm" data-mode="ALL">
+          <span>🌐</span>
+          <span>Semua Tanggal (Full)</span>
+        </button>
+
+        <!-- Tab 2: Per Hari -->
+        <button id="tabDateDay" class="date-tab-btn flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition bg-slate-100 hover:bg-slate-200 dark:bg-slate-750 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700" data-mode="DAY">
+          <span>☀️</span>
+          <span>Filter Harian (1 Hari)</span>
+        </button>
+
+        <!-- Tab 3: Per Minggu -->
+        <button id="tabDateWeek" class="date-tab-btn flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition bg-slate-100 hover:bg-slate-200 dark:bg-slate-750 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700" data-mode="WEEK">
+          <span>📆</span>
+          <span>Filter Mingguan (Sen-Min)</span>
+        </button>
+
+        <!-- Tab 4: Rentang Tanggal -->
+        <button id="tabDateRange" class="date-tab-btn flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition bg-slate-100 hover:bg-slate-200 dark:bg-slate-750 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700" data-mode="RANGE">
+          <span>⏳</span>
+          <span>Rentang Bebas (Mulai - Selesai)</span>
+        </button>
+
+      </div>
+
+      <!-- Sub-panel Inputs for Date Filtering -->
+      <div id="dateFilterInputsContainer" class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-750 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
+        
+        <!-- Controls area -->
+        <div id="dateControlsArea" class="flex flex-wrap items-center gap-3">
+          <span class="text-slate-500 italic">Menampilkan seluruh data tanpa batasan tanggal. Klik tombol mode di atas untuk memfilter per hari atau per minggu.</span>
+        </div>
+
+        <!-- Reset / All Button -->
+        <button id="btnCancelDateFilter" class="px-3.5 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-semibold transition">
+          Reset Filter Tanggal
+        </button>
+
+      </div>
+
+      <!-- Quick Date chips for easy clicking (e.g. 1 Agt, 2 Agt, etc.) -->
+      <div id="quickDateChipsWrap" class="flex flex-wrap items-center gap-1.5 pt-1 overflow-x-auto pb-1 text-xs">
+        <span class="text-slate-400 font-semibold text-[11px] whitespace-nowrap">Pilihan Cepat Hari:</span>
+        <div id="quickDateChipsList" class="flex items-center gap-1 flex-wrap">
+          <!-- Rendered dynamically -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 2: PUSAT FILTER KOLOM DINAMIS (OTOMATIS SESUAI ISI EXCEL) -->
+    <!-- ===================================================================== -->
+    <section class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 shadow-sm flex flex-col gap-3">
+      
+      <!-- Header of Column Filter Section -->
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-700/60 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🎯</span>
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">
+              Filter Kolom Dinamis (Pilihan Kolom Lain Otomatis Menyesuaikan)
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+              Klik salah satu tombol kolom di bawah untuk memfilter nilai (opsi <i class="font-semibold text-emerald-600 dark:text-emerald-400">(Kosong) / Blanks</i> otomatis terdeteksi)
+            </p>
+          </div>
+        </div>
+
+        <!-- Reset All Button -->
+        <button id="btnResetAllFilters" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 border border-rose-200 dark:border-rose-900/60 transition">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          <span>Reset Semua Filter</span>
+        </button>
+      </div>
+
+      <!-- DYNAMIC COLUMN FILTER BUTTONS (SLICERS) -->
+      <div id="columnFilterBar" class="flex flex-wrap items-center gap-2 pt-1">
+        <!-- Rendered dynamically for each column found in the Excel -->
+        <div class="text-xs text-slate-400 italic">Menganalisis kolom file Excel...</div>
+      </div>
+
+      <!-- ACTIVE FILTER TAGS PILLS -->
+      <div id="activeFilterTagsBar" class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+        <span class="text-xs text-slate-400 font-semibold">Filter Aktif:</span>
+        <span class="text-xs text-slate-400 italic">(Belum ada filter yang dipilih - seluruh data tampil)</span>
+      </div>
+
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- SECTION 3: DATA TABLE & ACTIONS -->
+    <!-- ===================================================================== -->
+    <section class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden flex flex-col">
+      
+      <!-- Table Action Bar (Global Search & Download) -->
+      <div class="p-3.5 border-b border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-800/50">
+        
+        <!-- Global Search Box -->
+        <div class="relative flex-1 min-w-[220px]">
+          <input id="inputGlobalSearch" type="text" placeholder="Ketik untuk mencari di semua kolom (nopol, driver AMT, keterangan, dll.)..." class="w-full text-xs sm:text-sm pl-9 pr-4 py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition">
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-2.5 sm:top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </div>
+
+        <!-- Download Buttons (FORMAT ASLI EXCEL DENGAN KOP SURAT) -->
+        <div class="flex items-center gap-2">
+          <button id="btnExportFormattedExcel" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="Unduh hasil filter dengan format & kop surat asli Excel">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <span>Simpan Hasil Excel Format Asli (.xls)</span>
+          </button>
+
+          <button id="btnExportCSV" class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 transition">
+            <span>CSV</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- MAIN TABLE WITH STICKY HEADERS & NATIVE EXCEL FILTER BUTTONS -->
+      <div class="overflow-x-auto min-h-[420px] max-h-[640px]">
+        <table id="dataTable" class="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead class="bg-slate-100 dark:bg-slate-750 text-slate-700 dark:text-slate-200 sticky top-0 z-10 font-bold border-b border-slate-200 dark:border-slate-700 select-none">
+            <tr id="tableHeaderRow">
+              <th class="p-3 text-center w-12 text-slate-400 font-normal">#</th>
+              <th class="p-3">Data</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-100 dark:divide-slate-700/50 font-normal">
+            <tr>
+              <td colspan="5" class="p-12 text-center text-slate-400">
+                Memuat data Excel...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION FOOTER -->
+      <div class="p-3.5 border-t border-slate-200 dark:border-slate-700/60 bg-slate-50/50 dark:bg-slate-800/50 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="text-slate-500">Tampilkan:</span>
+          <select id="pageSizeSelect" class="bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded px-2 py-1 text-xs font-semibold">
+            <option value="25" selected>25 baris per halaman</option>
+            <option value="50">50 baris per halaman</option>
+            <option value="100">100 baris per halaman</option>
+            <option value="250">250 baris per halaman</option>
+            <option value="ALL">Tampilkan Semua</option>
+          </select>
+          <span id="pageInfoText" class="text-slate-500 hidden sm:inline ml-2">Menampilkan 1 - 25 dari 6.374 data</span>
+        </div>
+
+        <div class="flex items-center gap-1 font-semibold">
+          <button id="btnPrevPage" disabled class="px-3 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-600 transition">Sebelumnya</button>
+          <span id="pageCurrentIndicator" class="px-3 py-1 text-slate-700 dark:text-slate-200 font-bold">1 / 255</span>
+          <button id="btnNextPage" disabled class="px-3 py-1 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-600 transition">Berikutnya</button>
+        </div>
+      </div>
+
+    </section>
+
+    </div> <!-- /filterAndDataContainer -->
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- EXCEL NATIVE AUTOFILTER DIALOG POPUP (PERSIS SESUAI GAMBAR SCREENSHOT) -->
+  <!-- ===================================================================== -->
+  <div id="excelFilterPopup" class="fixed z-50 hidden bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg border border-slate-300 dark:border-slate-600 excel-popup w-84 max-w-[95vw] text-xs">
+    
+    <!-- Header title for popup on mobile -->
+    <div class="px-3.5 py-2 bg-slate-100 dark:bg-slate-750 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-emerald-600 font-bold">🎯 Filter Kolom:</span>
+        <span id="popupColTitle" class="font-bold text-slate-800 dark:text-slate-100">JENIS SEWA</span>
+      </div>
+      <button id="popupBtnCloseX" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-base font-bold">&times;</button>
+    </div>
+
+    <!-- Sort Options -->
+    <div class="py-1 border-b border-slate-200 dark:border-slate-700">
+      <button id="popupBtnSortAsc" class="w-full px-3.5 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2.5 transition">
+        <span class="font-bold text-emerald-600 text-sm">A↓Z</span>
+        <span>Urutkan A ke Z</span>
+      </button>
+      <button id="popupBtnSortDesc" class="w-full px-3.5 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2.5 transition">
+        <span class="font-bold text-emerald-600 text-sm">Z↓A</span>
+        <span>Urutkan Z ke A</span>
+      </button>
+    </div>
+
+    <!-- Clear Filter Option -->
+    <div class="py-1 border-b border-slate-200 dark:border-slate-700">
+      <button id="popupBtnClearThisFilter" class="w-full px-3.5 py-1.5 text-left hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-2.5 text-slate-600 dark:text-slate-300 transition">
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        <span id="popupClearFilterLabel">Bersihkan Filter Dari "JENIS SEWA"</span>
+      </button>
+    </div>
+
+    <!-- Text Filter Option Accordion -->
+    <div class="py-1 border-b border-slate-200 dark:border-slate-700">
+      <div class="px-3.5 py-1.5 flex items-center justify-between cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700" id="popupTextFilterHeader">
+        <span>Filter Teks</span>
+        <span class="text-[10px] text-slate-400">▶</span>
+      </div>
+      <div id="popupTextFilterBody" style="display: none;" class="px-3.5 py-2 bg-slate-50 dark:bg-slate-750 flex flex-col gap-1.5">
+        <select id="popupTextOp" class="w-full text-xs p-1 rounded bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600">
+          <option value="CONTAINS" selected>Berisi (Mengandung kata)</option>
+          <option value="NOT_CONTAINS">Tidak Mengandung kata</option>
+          <option value="EQUALS">Sama Dengan (Persis)</option>
+          <option value="NOT_EQUALS">Tidak Sama Dengan</option>
+          <option value="STARTS_WITH">Dimulai Dengan</option>
+          <option value="ENDS_WITH">Diakhiri Dengan</option>
+        </select>
+        <div class="flex gap-1">
+          <input id="popupTextKeyword" type="text" placeholder="Masukkan kata..." class="flex-1 text-xs px-2 py-1 rounded bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 outline-none">
+          <button id="popupBtnApplyText" class="px-2.5 py-1 bg-emerald-600 text-white rounded text-xs font-bold hover:bg-emerald-700">Terapkan</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search Input Box -->
+    <div class="p-2 border-b border-slate-200 dark:border-slate-700">
+      <div class="relative">
+        <input id="popupSearchInput" type="text" placeholder="Cari..." class="w-full pl-7 pr-2 py-1 text-xs border border-slate-300 dark:border-slate-600 rounded bg-white dark:bg-slate-700 outline-none focus:border-emerald-500">
+        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Tree Checkbox List Container (PERSIS GAMBAR SCREENSHOT) -->
+    <div class="p-2 max-h-56 overflow-y-auto">
+      
+      <!-- (Pilih Semua) -->
+      <label class="flex items-center gap-2 p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer font-bold text-slate-800 dark:text-slate-100">
+        <input id="popupChkSelectAll" type="checkbox" checked class="rounded text-emerald-600 focus:ring-emerald-500">
+        <span>(Pilih Semua)</span>
+      </label>
+
+      <!-- Values with tree branch lines -->
+      <div id="popupValuesTree" class="pl-4 space-y-0.5">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Bottom Buttons (OK / Batal) -->
+    <div class="p-2 bg-slate-50 dark:bg-slate-750 border-t border-slate-200 dark:border-slate-700 flex items-center justify-end gap-2">
+      <button id="popupBtnOK" class="px-5 py-1.5 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-sm">
+        OK
+      </button>
+      <button id="popupBtnCancel" class="px-4 py-1.5 rounded bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 border border-slate-300 dark:border-slate-600 transition">
+        Batal
+      </button>
+    </div>
+
+  </div>
+
+  <!-- BACKDROP FOR POPUP DIALOG -->
+  <div id="popupBackdrop" class="fixed inset-0 z-40 hidden bg-black/20 backdrop-blur-[1px]"></div>
+
+  <!-- ===================================================================== -->
+  <!-- JAVASCRIPT APPLICATION CODE -->
+  <!-- ===================================================================== -->
+  <script>
+    // Global Application State
+    const state = {
+      workbook: null,
+      fileName: 'checklist-pretrip_inspect-progress-lvl2.1 full.xls',
+      currentSheet: 'Checklist Harian',
+      headerRow: 8,
+      rawRows: [],
+      headers: [],        // e.g. ['NO.', 'NO. POLISI', 'JENIS SEWA', 'KL', 'TANGGAL PERIKSA', 'ACTION', 'AMT', 'Item Rusak', 'Keterangan']
+      colIndices: [],     // Maps each header to original table column index
+      dataRows: [],       // Array of 6,374 full objects
+      filteredRows: [],   // Currently filtered rows
+
+      // Date Filtering state
+      dateColumn: 'TANGGAL PERIKSA',
+      dateMode: 'ALL',    // 'ALL', 'DAY', 'WEEK', 'RANGE'
+      dateDayVal: '',     // e.g. '8/1/26' or '2026-08-01'
+      dateWeekIdx: 0,     // 0 to 5 (Weeks)
+      dateRangeStart: '', // 'YYYY-MM-DD'
+      dateRangeEnd: '',   // 'YYYY-MM-DD'
+      availableDates: [], // All unique date strings in data e.g. ['8/1/26', '8/2/26', ...]
+
+      // Multi-column active filter criteria: { [colName]: { mode: 'VALUES'|'TEXT', selectedValues: Set, op: '', keyword: '' } }
+      activeFilters: {},
+      globalSearch: '',
+
+      // Sorting
+      sortCol: '',
+      sortDir: 'asc',
+
+      // Pagination
+      currentPage: 1,
+      pageSize: 25,
+      darkMode: false,
+
+      // Currently open popup column
+      popupColumn: null,
+
+      // Dynamic Weeks calculated from file data
+      dynamicWeeks: []
+    };
+
+    function generateDynamicWeeks(availableDates) {
+      if (!availableDates || availableDates.length === 0) return [];
+      const parsedDates = availableDates.map(d => parseFlexDate(d)).filter(Boolean);
+      if (parsedDates.length === 0) return [];
+
+      parsedDates.sort((a, b) => a.getTime() - b.getTime());
+      const minDate = new Date(parsedDates[0]);
+      const maxDate = new Date(parsedDates[parsedDates.length - 1]);
+
+      const weeks = [];
+      let currStart = new Date(minDate);
+      let weekNum = 1;
+
+      while (currStart <= maxDate) {
+        const dayOfWeek = currStart.getDay(); // 0 = Sun, 1 = Mon ... 6 = Sat
+        const daysUntilSunday = (dayOfWeek === 0) ? 0 : (7 - dayOfWeek);
+
+        const currEnd = new Date(currStart);
+        currEnd.setDate(currEnd.getDate() + daysUntilSunday);
+        if (currEnd > maxDate) {
+          currEnd.setTime(maxDate.getTime());
+        }
+
+        const startStr = toDateKey(currStart);
+        const endStr = toDateKey(currEnd);
+
+        const sDay = currStart.getDate();
+        const eDay = currEnd.getDate();
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
+        const sMonth = months[currStart.getMonth()];
+        const eMonth = months[currEnd.getMonth()];
+        const year = currStart.getFullYear();
+
+        let label = '';
+        if (sMonth === eMonth) {
+          label = `${sDay} - ${eDay} ${sMonth} ${year}`;
+        } else {
+          label = `${sDay} ${sMonth} - ${eDay} ${eMonth} ${year}`;
+        }
+
+        weeks.push({
+          name: `Minggu ${weekNum}`,
+          label: label,
+          start: startStr,
+          end: endStr
+        });
+
+        weekNum++;
+        currStart = new Date(currEnd);
+        currStart.setDate(currStart.getDate() + 1);
+      }
+
+      return weeks;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      initEventListeners();
+      initDatePeriodTabs();
+      
+      // Mulai dengan tampilan awal yang bersih (tidak otomatis mengisi data sebelum dipilih pengguna)
+      renderInitialEmptyState();
+    });
+
+    function renderInitialEmptyState() {
+      state.fileName = '';
+      state.workbook = null;
+      state.currentSheet = '';
+      state.headers = [];
+      state.dataRows = [];
+      state.filteredRows = [];
+      state.activeFilters = {};
+      state.availableDates = [];
+      state.dynamicWeeks = [];
+
+      document.getElementById('fileNameText').textContent = 'Belum Ada File Dipilih';
+      const sheetWrap = document.getElementById('sheetSelectWrap');
+      if (sheetWrap) {
+        sheetWrap.classList.remove('flex');
+        sheetWrap.classList.add('hidden');
+      }
+      const headerWrap = document.getElementById('headerRowWrap');
+      if (headerWrap) {
+        headerWrap.classList.remove('flex');
+        headerWrap.classList.add('hidden');
+      }
+      const kpiBadges = document.getElementById('kpiBadgesWrap');
+      if (kpiBadges) {
+        kpiBadges.classList.remove('flex');
+        kpiBadges.classList.add('hidden');
+      }
+
+      const emptyHero = document.getElementById('emptyUploadHero');
+      if (emptyHero) {
+        emptyHero.classList.remove('hidden');
+        emptyHero.classList.add('flex');
+      }
+      const dataContainer = document.getElementById('filterAndDataContainer');
+      if (dataContainer) {
+        dataContainer.classList.remove('flex');
+        dataContainer.classList.add('hidden');
+      }
+
+      document.getElementById('fileRowSummary').innerHTML = 'Silakan pilih file Excel bulanan Anda (.xls, .xlsx, .xlsm, .csv) untuk mulai memfilter';
+      document.getElementById('kpiMatchedCount').textContent = '0';
+      document.getElementById('kpiTotalCount').textContent = '0';
+      
+      const controlsArea = document.getElementById('dateControlsArea');
+      if (controlsArea) {
+        controlsArea.innerHTML = '<span class="text-slate-500 italic">Silakan masukkan file Excel Anda terlebih dahulu untuk mengaktifkan filter periode.</span>';
+      }
+      const quickChips = document.getElementById('quickDateChipsList');
+      if (quickChips) quickChips.innerHTML = '<span class="text-slate-400 italic">(Menunggu file)</span>';
+      const colBar = document.getElementById('columnFilterBar');
+      if (colBar) colBar.innerHTML = '<div class="text-xs text-slate-400 italic">Kolom filter otomatis terdeteksi saat file Excel dipilih.</div>';
+      
+      updateActiveFilterPillsUI();
+      renderTable();
+    }
+
+    function initTheme() {
+      let isDark = false;
+      try {
+        isDark = localStorage.getItem('theme') === 'dark' || 
+          (!localStorage.getItem('theme') && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      } catch (e) {
+        isDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      }
+      setTheme(isDark);
+      const btn = document.getElementById('btnThemeToggle');
+      if (btn) btn.addEventListener('click', () => setTheme(!state.darkMode));
+    }
+
+    function setTheme(dark) {
+      state.darkMode = dark;
+      if (dark) {
+        document.documentElement.classList.add('dark');
+        const sun = document.getElementById('iconSun');
+        if (sun) sun.classList.remove('hidden');
+        const moon = document.getElementById('iconMoon');
+        if (moon) moon.classList.add('hidden');
+        try { localStorage.setItem('theme', 'dark'); } catch (e) {}
+      } else {
+        document.documentElement.classList.remove('dark');
+        const sun = document.getElementById('iconSun');
+        if (sun) sun.classList.add('hidden');
+        const moon = document.getElementById('iconMoon');
+        if (moon) moon.classList.remove('hidden');
+        try { localStorage.setItem('theme', 'light'); } catch (e) {}
+      }
+    }
+
+    function initEventListeners() {
+      // Reload pretrip file buttons (Header & Hero)
+      const btnReload = document.getElementById('btnReloadPretrip');
+      if (btnReload) {
+        btnReload.addEventListener('click', loadPretripInspectionFile);
+      }
+      const btnHeroPretrip = document.getElementById('btnLoadPretripHero');
+      if (btnHeroPretrip) {
+        btnHeroPretrip.addEventListener('click', loadPretripInspectionFile);
+      }
+
+      // Custom file inputs (Header & Hero)
+      const fileInput = document.getElementById('excelFileInput');
+      if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+          if (this.files && this.files.length > 0) {
+            handleFileUpload(this.files[0]);
+            this.value = '';
+          }
+        });
+      }
+      const fileInputHero = document.getElementById('excelFileInputHero');
+      if (fileInputHero) {
+        fileInputHero.addEventListener('change', function(e) {
+          if (this.files && this.files.length > 0) {
+            handleFileUpload(this.files[0]);
+            this.value = '';
+          }
+        });
+      }
+
+      // Sheet selector
+      const sheetSel = document.getElementById('sheetSelect');
+      if (sheetSel) {
+        sheetSel.addEventListener('change', (e) => {
+          if (!state.workbook) return;
+          state.currentSheet = e.target.value;
+          const sheet = state.workbook.Sheets[state.currentSheet];
+          const tempRows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
+          state.headerRow = detectHeaderRow(tempRows);
+          parseWorkbookSheet();
+        });
+      }
+
+      // Header row input
+      const headerInp = document.getElementById('inputHeaderRow');
+      if (headerInp) {
+        headerInp.addEventListener('change', (e) => {
+          const val = parseInt(e.target.value);
+          if (!isNaN(val) && val >= 1 && val <= 50) {
+            state.headerRow = val;
+            parseWorkbookSheet();
+          }
+        });
+      }
+
+      // Date column selector
+      const dateColSel = document.getElementById('selectDateColumn');
+      if (dateColSel) {
+        dateColSel.addEventListener('change', (e) => {
+          state.dateColumn = e.target.value;
+          recomputeDates();
+        });
+      }
+
+      // Drag and Drop support on window directly without intrusive overlay
+      window.addEventListener('dragover', (e) => {
+        e.preventDefault();
+      });
+      window.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+          handleFileUpload(e.dataTransfer.files[0]);
+        }
+      });
+
+      // Reset All Filters button
+      document.getElementById('btnResetAllFilters').addEventListener('click', resetAllFilters);
+
+      // Global Search input
+      document.getElementById('inputGlobalSearch').addEventListener('input', (e) => {
+        state.globalSearch = e.target.value.toLowerCase().trim();
+        applyAllFilters();
+      });
+
+      // Pagination controls
+      document.getElementById('pageSizeSelect').addEventListener('change', (e) => {
+        state.pageSize = e.target.value === 'ALL' ? 999999 : parseInt(e.target.value);
+        state.currentPage = 1;
+        renderTable();
+      });
+      document.getElementById('btnPrevPage').addEventListener('click', () => {
+        if (state.currentPage > 1) { state.currentPage--; renderTable(); }
+      });
+      document.getElementById('btnNextPage').addEventListener('click', () => {
+        const totalPages = Math.ceil(state.filteredRows.length / state.pageSize);
+        if (state.currentPage < totalPages) { state.currentPage++; renderTable(); }
+      });
+
+      // Export buttons (Format Asli & ZIP)
+      document.getElementById('btnExportFormattedExcel').addEventListener('click', () => exportFormattedWorkbookSingle());
+      document.getElementById('btnExportCSV').addEventListener('click', exportToCSV);
+      document.getElementById('btnSplitDailyZip').addEventListener('click', exportSplitDailyZip);
+      document.getElementById('btnSplitWeeklyZip').addEventListener('click', exportSplitWeeklyZip);
+
+      // Popup controls
+      initPopupEventListeners();
+    }
+
+    // =========================================================================
+    
+    // =========================================================================
+    // XML SPREADSHEET 2003 TEMPLATE PARSER (FORMAT ASLI BIRT / SMART LEADERS)
+    // =========================================================================
+    function checkAndParseXmlSpreadsheet(uint8Arr) {
+      try {
+        const preview = new TextDecoder('utf-8').decode(uint8Arr.slice(0, 1500));
+        if (preview.includes('<?xml') && (preview.includes('spreadsheet') || preview.includes('Workbook'))) {
+          const fullText = new TextDecoder('utf-8').decode(uint8Arr);
+          state.isXmlSpreadsheet = true;
+          state.rawXmlText = fullText;
+          extractXmlTemplate(fullText);
+          return true;
+        }
+      } catch (e) {
+        console.warn('Gagal membaca format XML spreadsheet:', e);
+      }
+      state.isXmlSpreadsheet = false;
+      state.rawXmlText = null;
+      state.xmlHeader = null;
+      state.xmlFooter = null;
+      state.xmlRows = [];
+      return false;
+    }
+
+    function extractXmlTemplate(xml) {
+      state.xmlRows = [];
+      
+      // 1. Temukan header Kop sampai baris 8 (yang memuat '>NO.<')
+      const row8Pos = xml.indexOf('>NO.<');
+      if (row8Pos !== -1) {
+        const row8Start = xml.lastIndexOf('<Row', row8Pos);
+        const row8End = xml.indexOf('</Row>', row8Start) + 6;
+        state.xmlHeader = xml.slice(0, row8End);
+      } else {
+        let pos = 0;
+        let rCount = 0;
+        let r8End = 0;
+        while (rCount < 8) {
+          const start = xml.indexOf('<Row', pos);
+          if (start === -1) break;
+          const end = xml.indexOf('</Row>', start);
+          if (end === -1) break;
+          rCount++;
+          r8End = end + 6;
+          pos = r8End;
+        }
+        state.xmlHeader = xml.slice(0, r8End);
+      }
+
+      // 2. Temukan Footer mulai dari </ss:Table>
+      const tableEndPos = xml.lastIndexOf('</ss:Table>');
+      if (tableEndPos !== -1) {
+        state.xmlFooter = xml.slice(tableEndPos);
+      } else {
+        state.xmlFooter = '\t</ss:Table>\n</Worksheet>\n</Workbook>';
+      }
+
+      // 3. Ekstrak seluruh elemen baris XML untuk referensi cepat
+      let pos = 0;
+      while (true) {
+        const start = xml.indexOf('<Row', pos);
+        if (start === -1) break;
+        const end = xml.indexOf('</Row>', start);
+        if (end === -1) break;
+        state.xmlRows.push(xml.slice(start, end + 6));
+        pos = end + 6;
+      }
+    }
+
+    // LOAD PRETRIP FILE & PARSE HEADERS
+    // =========================================================================
+    function loadPretripInspectionFile() {
+      const fileName = 'checklist-pretrip_inspect-progress-lvl2.1 full.xls';
+      document.getElementById('fileNameText').textContent = `Memuat ${fileName}...`;
+
+      fetch(fileName)
+        .then(res => {
+          if (!res.ok) throw new Error('File tidak dapat dimuat melalui HTTP.');
+          return res.arrayBuffer();
+        })
+        .then(buf => {
+          const data = new Uint8Array(buf);
+          checkAndParseXmlSpreadsheet(data);
+          state.fileName = fileName;
+          state.workbook = XLSX.read(data, { type: 'array', cellDates: true });
+          state.currentSheet = state.workbook.SheetNames.includes('Checklist Harian') ? 'Checklist Harian' : state.workbook.SheetNames[0];
+          updateSheetSelector();
+          state.headerRow = 8;
+          
+          parseWorkbookSheet();
+        })
+        .catch(err => {
+          console.warn('Gagal fetch otomatis:', err);
+          alert('Untuk membuka contoh data secara otomatis, jalankan melalui "Buka_Aplikasi.bat" (server lokal), atau klik tombol "Pilih File Excel" untuk memilih file Anda secara manual dari komputer.');
+          document.getElementById('fileNameText').textContent = 'Silakan pilih file Excel melalui tombol di atas';
+          renderInitialEmptyState();
+        });
+    }
+
+    function handleFileUpload(file) {
+      if (!file) return;
+      state.fileName = file.name;
+      document.getElementById('fileNameText').textContent = `Membaca ${file.name}...`;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          checkAndParseXmlSpreadsheet(data);
+          state.workbook = XLSX.read(data, { type: 'array', cellDates: true });
+          
+          if (!state.workbook || !state.workbook.SheetNames || state.workbook.SheetNames.length === 0) {
+            throw new Error('Workbook tidak memiliki lembar kerja (worksheet).');
+          }
+
+          state.currentSheet = state.workbook.SheetNames[0];
+          updateSheetSelector();
+
+          const sheet = state.workbook.Sheets[state.currentSheet];
+          const tempRows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
+          state.headerRow = detectHeaderRow(tempRows);
+
+          parseWorkbookSheet();
+        } catch (err) {
+          console.error("Gagal membaca file:", err);
+          alert("Gagal membaca file Excel: " + err.message);
+          document.getElementById('fileNameText').textContent = 'Gagal memuat: ' + file.name;
+        }
+      };
+      reader.onerror = (err) => {
+        console.error("FileReader error:", err);
+        alert("Gagal membaca file: " + err);
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function updateSheetSelector() {
+      const sel = document.getElementById('sheetSelect');
+      if (!sel || !state.workbook || !state.workbook.SheetNames) return;
+      sel.innerHTML = state.workbook.SheetNames.map(s => 
+        `<option value="${escapeHtml(s)}" ${s === state.currentSheet ? 'selected' : ''}>${escapeHtml(s)}</option>`
+      ).join('');
+      const badge = document.getElementById('sheetBadge');
+      if (badge) badge.textContent = state.currentSheet;
+    }
+
+    function updateDateColumnSelector() {
+      const sel = document.getElementById('selectDateColumn');
+      if (!sel || !state.headers || state.headers.length === 0) return;
+      sel.innerHTML = state.headers.map(h => 
+        `<option value="${escapeHtml(h)}" ${h === state.dateColumn ? 'selected' : ''}>${escapeHtml(h)}</option>`
+      ).join('');
+    }
+
+    function recomputeDates() {
+      const dateSet = new Set();
+      state.dataRows.forEach(row => {
+        if (row[state.dateColumn]) dateSet.add(row[state.dateColumn]);
+      });
+      state.availableDates = Array.from(dateSet).sort((a, b) => {
+        const dA = parseFlexDate(a);
+        const dB = parseFlexDate(b);
+        if (!dA || !dB) return a.localeCompare(b);
+        return dA.getTime() - dB.getTime();
+      });
+      state.dynamicWeeks = generateDynamicWeeks(state.availableDates);
+      state.dateWeekIdx = 0;
+      buildQuickDateChips();
+      setDateMode(state.dateMode);
+      applyAllFilters();
+    }
+
+    function detectHeaderRow(rows) {
+      for (let r = 0; r < Math.min(rows.length, 15); r++) {
+        const row = rows[r];
+        if (Array.isArray(row)) {
+          const textCols = row.filter(c => c && String(c).trim().length > 0);
+          if (textCols.length >= 4) return r + 1;
+        }
+      }
+      return 1;
+    }
+
+    function parseWorkbookSheet() {
+      if (!state.workbook) return;
+      const sheet = state.workbook.Sheets[state.currentSheet];
+      state.rawRows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false });
+
+      const headerIdx = Math.max(0, state.headerRow - 1);
+      const rawHeaderRow = state.rawRows[headerIdx] || [];
+
+      // Extract non-empty headers & their column indices
+      state.headers = [];
+      state.colIndices = [];
+
+      rawHeaderRow.forEach((h, i) => {
+        const str = h !== undefined && h !== null ? String(h).trim() : '';
+        if (str.length > 0) {
+          state.headers.push(str);
+          state.colIndices.push(i);
+        }
+      });
+
+      // Detect date column
+      const detectedDateCol = state.headers.find(h => {
+        const l = h.toLowerCase();
+        return l.includes('tanggal') || l.includes('date') || l.includes('tgl') || l.includes('waktu');
+      }) || state.headers[0];
+      state.dateColumn = detectedDateCol;
+
+      // Extract all data rows
+      state.dataRows = [];
+      const dateSet = new Set();
+
+      for (let r = headerIdx + 1; r < state.rawRows.length; r++) {
+        const row = state.rawRows[r];
+        if (!row || row.length === 0) continue;
+
+        let hasData = false;
+        const rowObj = { _id: r };
+
+        state.headers.forEach((h, idx) => {
+          const realCol = state.colIndices[idx];
+          const val = row[realCol];
+          const clean = val !== undefined && val !== null ? String(val).trim() : '';
+          rowObj[h] = clean;
+          if (clean.length > 0) hasData = true;
+          // Simpan hyperlink nopol jika ada
+          const cAddr = XLSX.utils.encode_cell({ r, c: realCol });
+          if (sheet[cAddr] && sheet[cAddr].l && sheet[cAddr].l.Target) {
+            rowObj._href = sheet[cAddr].l.Target;
+          }
+        });
+
+        if (hasData) {
+          state.dataRows.push(rowObj);
+          if (rowObj[state.dateColumn]) {
+            dateSet.add(rowObj[state.dateColumn]);
+          }
+        }
+      }
+
+      state.availableDates = Array.from(dateSet).sort((a, b) => {
+        const dA = parseFlexDate(a);
+        const dB = parseFlexDate(b);
+        if (!dA || !dB) return a.localeCompare(b);
+        return dA.getTime() - dB.getTime();
+      });
+
+      // Hitung daftar minggu secara otomatis sesuai tanggal yang ada di file Excel!
+      state.dynamicWeeks = generateDynamicWeeks(state.availableDates);
+      state.dateWeekIdx = 0;
+
+      // Update UI metadata
+      document.getElementById('fileNameText').textContent = state.fileName;
+      updateSheetSelector();
+      const headerInp = document.getElementById('inputHeaderRow');
+      if (headerInp) headerInp.value = state.headerRow;
+      updateDateColumnSelector();
+
+      const sheetWrap = document.getElementById('sheetSelectWrap');
+      if (sheetWrap) {
+        sheetWrap.classList.remove('hidden');
+        sheetWrap.classList.add('flex');
+      }
+      const headerWrap = document.getElementById('headerRowWrap');
+      if (headerWrap) {
+        headerWrap.classList.remove('hidden');
+        headerWrap.classList.add('flex');
+      }
+
+      const isPretrip = state.dataRows.some(r => 'ACTION' in r);
+      const kpiBadges = document.getElementById('kpiBadgesWrap');
+      if (kpiBadges) {
+        if (isPretrip) {
+          kpiBadges.classList.remove('hidden');
+          kpiBadges.classList.add('flex');
+        } else {
+          kpiBadges.classList.remove('flex');
+          kpiBadges.classList.add('hidden');
+        }
+      }
+
+      // Switch view: Sembunyikan upload hero, tampilkan panel filter & tabel data
+      const emptyHero = document.getElementById('emptyUploadHero');
+      if (emptyHero) {
+        emptyHero.classList.remove('flex');
+        emptyHero.classList.add('hidden');
+      }
+      const dataContainer = document.getElementById('filterAndDataContainer');
+      if (dataContainer) {
+        dataContainer.classList.remove('hidden');
+        dataContainer.classList.add('flex');
+      }
+
+      document.getElementById('fileRowSummary').innerHTML = `Total Data: <b class="text-slate-700 dark:text-slate-200 font-bold">${state.dataRows.length.toLocaleString('id-ID')}</b> baris • Format Template: <b class="text-emerald-600">Preserved (Kop Surat & Baris 1-${state.headerRow} Utuh)</b>`;
+      document.getElementById('kpiTotalCount').textContent = state.dataRows.length.toLocaleString('id-ID');
+
+      // Build Quick Date chips
+      buildQuickDateChips();
+
+      // Build Dynamic Column Filter Bar
+      buildColumnFilterBar();
+
+      // Reset filters and apply
+      state.activeFilters = {};
+      state.dateMode = 'ALL';
+      setDateMode('ALL');
+      state.currentPage = 1;
+      applyAllFilters();
+    }
+
+    // =========================================================================
+    // SECTION 1: FILTER PERIODE TANGGAL LOGIC & TABS
+    // =========================================================================
+    function initDatePeriodTabs() {
+      const tabs = document.querySelectorAll('.date-tab-btn');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const mode = tab.dataset.mode;
+          setDateMode(mode);
+        });
+      });
+
+      document.getElementById('btnCancelDateFilter').addEventListener('click', () => {
+        setDateMode('ALL');
+      });
+    }
+
+    function setDateMode(mode) {
+      state.dateMode = mode;
+
+      // Update tab styling
+      const tabs = document.querySelectorAll('.date-tab-btn');
+      tabs.forEach(tab => {
+        if (tab.dataset.mode === mode) {
+          tab.className = 'date-tab-btn flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition bg-emerald-600 text-white border-emerald-600 shadow-sm';
+        } else {
+          tab.className = 'date-tab-btn flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border transition bg-slate-100 hover:bg-slate-200 dark:bg-slate-750 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700';
+        }
+      });
+
+      const controlsArea = document.getElementById('dateControlsArea');
+      const badge = document.getElementById('dateFilterActiveBadge');
+
+      if (mode === 'ALL') {
+        badge.textContent = 'Semua Tanggal';
+        badge.className = 'text-xs font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950/80 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800';
+        controlsArea.innerHTML = `
+          <span class="text-slate-500 italic">Menampilkan seluruh ${state.dataRows.length.toLocaleString('id-ID')} data tanpa batasan tanggal. Klik mode di atas untuk memfilter per hari atau per minggu.</span>
+        `;
+        applyAllFilters();
+        return;
+      }
+
+      if (mode === 'DAY') {
+        if (!state.dateDayVal && state.availableDates.length > 0) {
+          state.dateDayVal = state.availableDates[0]; // e.g. '8/1/26'
+        }
+        renderDayControls();
+      } else if (mode === 'WEEK') {
+        renderWeekControls();
+      } else if (mode === 'RANGE') {
+        renderRangeControls();
+      }
+
+      applyAllFilters();
+    }
+
+    function renderDayControls() {
+      const controlsArea = document.getElementById('dateControlsArea');
+      const badge = document.getElementById('dateFilterActiveBadge');
+
+      const currIdx = state.availableDates.indexOf(state.dateDayVal);
+      const prevDisabled = currIdx <= 0 ? 'disabled opacity-40' : '';
+      const nextDisabled = currIdx >= state.availableDates.length - 1 ? 'disabled opacity-40' : '';
+
+      badge.textContent = `Harian: ${state.dateDayVal}`;
+      badge.className = 'text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 px-2.5 py-0.5 rounded-full border border-amber-300 dark:border-amber-800';
+
+      controlsArea.innerHTML = `
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-bold text-slate-700 dark:text-slate-200">Pilih Tanggal:</span>
+          
+          <button id="btnPrevDay" ${prevDisabled} class="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 font-bold transition">◀</button>
+          
+          <select id="selectDayDropdown" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 outline-none focus:ring-2 focus:ring-emerald-500">
+            ${state.availableDates.map(d => `<option value="${d}" ${d === state.dateDayVal ? 'selected' : ''}>Tanggal ${d} (${countRowsForDate(d)} data)</option>`).join('')}
+          </select>
+
+          <button id="btnNextDay" ${nextDisabled} class="px-2 py-1 rounded bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 font-bold transition">▶</button>
+          
+          <span class="text-xs text-slate-500 hidden sm:inline ml-2">• File Excel harian dapat langsung diunduh dengan format asli</span>
+        </div>
+      `;
+
+      document.getElementById('selectDayDropdown').addEventListener('change', (e) => {
+        state.dateDayVal = e.target.value;
+        renderDayControls();
+        applyAllFilters();
+      });
+
+      document.getElementById('btnPrevDay').addEventListener('click', () => {
+        if (currIdx > 0) {
+          state.dateDayVal = state.availableDates[currIdx - 1];
+          renderDayControls();
+          applyAllFilters();
+        }
+      });
+
+      document.getElementById('btnNextDay').addEventListener('click', () => {
+        if (currIdx < state.availableDates.length - 1) {
+          state.dateDayVal = state.availableDates[currIdx + 1];
+          renderDayControls();
+          applyAllFilters();
+        }
+      });
+    }
+
+    function renderWeekControls() {
+      const controlsArea = document.getElementById('dateControlsArea');
+      const badge = document.getElementById('dateFilterActiveBadge');
+
+      const weeksList = state.dynamicWeeks && state.dynamicWeeks.length > 0 ? state.dynamicWeeks : [];
+      if (weeksList.length === 0) {
+        controlsArea.innerHTML = '<span class="text-xs text-slate-500">Tidak ada tanggal valid untuk dihitung mingguan.</span>';
+        return;
+      }
+
+      const currWeek = weeksList[state.dateWeekIdx] || weeksList[0];
+      badge.textContent = `${currWeek.name}: ${currWeek.label}`;
+      badge.className = 'text-xs font-bold text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-950/80 px-2.5 py-0.5 rounded-full border border-blue-300 dark:border-blue-800';
+
+      controlsArea.innerHTML = `
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-bold text-slate-700 dark:text-slate-200">Pilih Minggu:</span>
+          
+          <select id="selectWeekDropdown" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1 text-xs font-bold text-blue-600 dark:text-blue-400 outline-none focus:ring-2 focus:ring-blue-500">
+            ${weeksList.map((w, i) => `<option value="${i}" ${i === state.dateWeekIdx ? 'selected' : ''}>${w.name} (${w.label})</option>`).join('')}
+          </select>
+
+          <span class="text-xs text-slate-500 hidden sm:inline ml-2">• Otomatis dihitung per minggu (Senin-Minggu)</span>
+        </div>
+      `;
+
+      document.getElementById('selectWeekDropdown').addEventListener('change', (e) => {
+        state.dateWeekIdx = parseInt(e.target.value, 10);
+        renderWeekControls();
+        applyAllFilters();
+      });
+    }
+
+    function renderRangeControls() {
+      const controlsArea = document.getElementById('dateControlsArea');
+      const badge = document.getElementById('dateFilterActiveBadge');
+
+      if (!state.dateRangeStart) state.dateRangeStart = '2026-08-01';
+      if (!state.dateRangeEnd) state.dateRangeEnd = '2026-08-31';
+
+      badge.textContent = `Rentang: ${state.dateRangeStart} s/d ${state.dateRangeEnd}`;
+      badge.className = 'text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-950/80 px-2.5 py-0.5 rounded-full border border-purple-300 dark:border-purple-800';
+
+      controlsArea.innerHTML = `
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-bold text-slate-700 dark:text-slate-200">Mulai:</span>
+          <input id="inputRangeStart" type="date" value="${state.dateRangeStart}" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1 text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500">
+          
+          <span class="font-bold text-slate-700 dark:text-slate-200">Sampai:</span>
+          <input id="inputRangeEnd" type="date" value="${state.dateRangeEnd}" class="bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg px-2.5 py-1 text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+      `;
+
+      document.getElementById('inputRangeStart').addEventListener('change', (e) => {
+        state.dateRangeStart = e.target.value;
+        badge.textContent = `Rentang: ${state.dateRangeStart} s/d ${state.dateRangeEnd}`;
+        applyAllFilters();
+      });
+      document.getElementById('inputRangeEnd').addEventListener('change', (e) => {
+        state.dateRangeEnd = e.target.value;
+        badge.textContent = `Rentang: ${state.dateRangeStart} s/d ${state.dateRangeEnd}`;
+        applyAllFilters();
+      });
+    }
+
+    function countRowsForDate(dateStr) {
+      let count = 0;
+      state.dataRows.forEach(r => {
+        if (r[state.dateColumn] === dateStr) count++;
+      });
+      return count;
+    }
+
+    function buildQuickDateChips() {
+      const container = document.getElementById('quickDateChipsList');
+      container.innerHTML = '';
+
+      state.availableDates.forEach(dStr => {
+        const chip = document.createElement('button');
+        chip.className = 'px-2 py-0.5 rounded-md bg-slate-100 hover:bg-emerald-100 dark:bg-slate-700 dark:hover:bg-emerald-950 text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 font-semibold transition text-[11px] border border-slate-200 dark:border-slate-600';
+        
+        // Display e.g. 1 Agt
+        const parts = dStr.split('/');
+        let label = dStr;
+        if (parts.length === 3) {
+          label = `${parts[1]} ${parts[0] === '8' ? 'Agt' : 'Sep'}`;
+        }
+        chip.textContent = label;
+
+        chip.addEventListener('click', () => {
+          state.dateDayVal = dStr;
+          setDateMode('DAY');
+        });
+
+        container.appendChild(chip);
+      });
+    }
+
+    // =========================================================================
+    // SECTION 2: DYNAMIC COLUMN FILTER BAR (SLICERS)
+    // =========================================================================
+    function buildColumnFilterBar() {
+      const container = document.getElementById('columnFilterBar');
+      container.innerHTML = '';
+
+      state.headers.forEach(col => {
+        const btn = document.createElement('button');
+        btn.className = `btn-col-filter inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition select-none ${
+          state.activeFilters[col] 
+            ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' 
+            : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-750 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+        }`;
+        btn.dataset.col = col;
+
+        let icon = '🏷️';
+        const lower = col.toLowerCase();
+        if (lower.includes('tanggal') || lower.includes('date')) icon = '📅';
+        else if (lower.includes('polisi') || lower.includes('nopol')) icon = '🚛';
+        else if (lower.includes('sewa')) icon = '🏢';
+        else if (lower.includes('action')) icon = '🚦';
+        else if (lower.includes('amt') || lower.includes('driver')) icon = '👤';
+        else if (lower.includes('kl')) icon = '📏';
+        else if (lower.includes('rusak')) icon = '⚠️';
+        else if (lower.includes('ket')) icon = '📝';
+
+        btn.innerHTML = `
+          <span>${icon}</span>
+          <span class="font-bold">${escapeHtml(col)}</span>
+          <span class="text-[10px] opacity-70">▼</span>
+        `;
+
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openExcelNativePopup(col, btn);
+        });
+
+        container.appendChild(btn);
+      });
+    }
+
+    function updateColumnFilterBarUI() {
+      const buttons = document.querySelectorAll('.btn-col-filter');
+      buttons.forEach(btn => {
+        const col = btn.dataset.col;
+        const filter = state.activeFilters[col];
+
+        if (filter) {
+          btn.className = 'btn-col-filter inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 text-white border border-emerald-600 shadow-sm transition';
+          let summary = '';
+          if (filter.mode === 'VALUES') {
+            summary = `${filter.selectedValues.size} nilai`;
+          } else if (filter.mode === 'TEXT') {
+            summary = `"${filter.keyword}"`;
+          }
+          btn.querySelector('span:nth-child(2)').innerHTML = `${escapeHtml(col)}: <span class="underline">${escapeHtml(summary)}</span>`;
+        } else {
+          btn.className = 'btn-col-filter inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-750 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition';
+          btn.querySelector('span:nth-child(2)').textContent = col;
+        }
+      });
+    }
+
+    // =========================================================================
+    // EXCEL NATIVE AUTOFILTER DIALOG POPUP (PERSIS GAMBAR SCREENSHOT)
+    // =========================================================================
+    function initPopupEventListeners() {
+      const popup = document.getElementById('excelFilterPopup');
+      const backdrop = document.getElementById('popupBackdrop');
+
+      const closePopup = () => {
+        popup.classList.add('hidden');
+        backdrop.classList.add('hidden');
+        state.popupColumn = null;
+      };
+
+      backdrop.addEventListener('click', closePopup);
+      document.getElementById('popupBtnCancel').addEventListener('click', closePopup);
+      document.getElementById('popupBtnCloseX').addEventListener('click', closePopup);
+
+      // Sort Asc / Desc
+      document.getElementById('popupBtnSortAsc').addEventListener('click', () => {
+        if (!state.popupColumn) return;
+        state.sortCol = state.popupColumn;
+        state.sortDir = 'asc';
+        closePopup();
+        renderTable();
+      });
+
+      document.getElementById('popupBtnSortDesc').addEventListener('click', () => {
+        if (!state.popupColumn) return;
+        state.sortCol = state.popupColumn;
+        state.sortDir = 'desc';
+        closePopup();
+        renderTable();
+      });
+
+      // Clear this filter
+      document.getElementById('popupBtnClearThisFilter').addEventListener('click', () => {
+        if (!state.popupColumn) return;
+        delete state.activeFilters[state.popupColumn];
+        closePopup();
+        applyAllFilters();
+      });
+
+      // Text filter expander
+      document.getElementById('popupTextFilterHeader').addEventListener('click', () => {
+        document.getElementById('popupTextFilterBody').classList.toggle('hidden');
+      });
+
+      document.getElementById('popupBtnApplyText').addEventListener('click', () => {
+        if (!state.popupColumn) return;
+        const op = document.getElementById('popupTextOp').value;
+        const kw = document.getElementById('popupTextKeyword').value.trim();
+        if (!kw) {
+          alert('Masukkan kata kunci filter.');
+          return;
+        }
+        state.activeFilters[state.popupColumn] = { mode: 'TEXT', op, keyword: kw };
+        closePopup();
+        applyAllFilters();
+      });
+
+      // Search in popup
+      document.getElementById('popupSearchInput').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        document.querySelectorAll('#popupValuesTree .popup-tree-item').forEach(item => {
+          const val = item.dataset.val;
+          if (!query || val.includes(query)) {
+            item.classList.remove('hidden');
+          } else {
+            item.classList.add('hidden');
+          }
+        });
+      });
+
+      // Select All toggle
+      document.getElementById('popupChkSelectAll').addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        document.querySelectorAll('#popupValuesTree .popup-val-chk').forEach(chk => {
+          const item = chk.closest('.popup-tree-item');
+          if (!item.classList.contains('hidden')) {
+            chk.checked = checked;
+          }
+        });
+      });
+
+      // OK Button -> Apply Values Filter
+      document.getElementById('popupBtnOK').addEventListener('click', () => {
+        if (!state.popupColumn) return;
+        const col = state.popupColumn;
+        
+        const allChks = document.querySelectorAll('#popupValuesTree .popup-val-chk');
+        const checkedChks = document.querySelectorAll('#popupValuesTree .popup-val-chk:checked');
+
+        if (checkedChks.length === allChks.length) {
+          delete state.activeFilters[col];
+        } else {
+          const selected = new Set();
+          checkedChks.forEach(c => selected.add(decodeURIComponent(c.value)));
+          state.activeFilters[col] = {
+            mode: 'VALUES',
+            selectedValues: selected
+          };
+        }
+
+        closePopup();
+        applyAllFilters();
+      });
+    }
+
+    // OPEN EXCEL NATIVE POPUP
+    function openExcelNativePopup(columnName, triggerElement) {
+      state.popupColumn = columnName;
+      const popup = document.getElementById('excelFilterPopup');
+      const backdrop = document.getElementById('popupBackdrop');
+
+      document.getElementById('popupColTitle').textContent = columnName;
+      document.getElementById('popupClearFilterLabel').textContent = `Bersihkan Filter Dari "${columnName}"`;
+      document.getElementById('popupSearchInput').value = '';
+      document.getElementById('popupTextKeyword').value = '';
+      document.getElementById('popupTextFilterBody').classList.add('hidden');
+
+      // Populate Tree Values WITH CASCADING FACET COUNTS ("dan yang lain menyesuaikan")
+      populatePopupTreeValues(columnName);
+
+      // Position popup
+      const rect = triggerElement.getBoundingClientRect();
+      const isMobile = window.innerWidth < 640;
+
+      if (isMobile) {
+        popup.style.left = '50%';
+        popup.style.top = '50%';
+        popup.style.transform = 'translate(-50%, -50%)';
+      } else {
+        popup.style.transform = 'none';
+        let left = rect.left;
+        let top = rect.bottom + 6;
+
+        if (left + 340 > window.innerWidth) left = window.innerWidth - 350;
+        if (left < 10) left = 10;
+        if (top + 450 > window.innerHeight) top = Math.max(10, rect.top - 460);
+
+        popup.style.left = `${left}px`;
+        popup.style.top = `${top}px`;
+      }
+
+      backdrop.classList.remove('hidden');
+      popup.classList.remove('hidden');
+    }
+
+    // CASCADING FACET VALUES & COUNTS (TERMASUK BLANKS / KOSONG PERSIS EXCEL)
+    function populatePopupTreeValues(col) {
+      const container = document.getElementById('popupValuesTree');
+      container.innerHTML = '';
+
+      // Find rows that match ALL OTHER active filters AND date filter (cascading engine!)
+      const qualifyingRows = state.dataRows.filter(row => {
+        // 1. Date Period Filter check
+        if (!matchDatePeriod(row)) return false;
+
+        // 2. Check other column filters (skip current column `col`)
+        for (const otherCol in state.activeFilters) {
+          if (otherCol === col) continue;
+
+          const f = state.activeFilters[otherCol];
+          const rawVal = row[otherCol];
+          const isBlank = rawVal === undefined || rawVal === null || String(rawVal).trim() === '';
+          const val = isBlank ? '(Kosong)' : String(rawVal).trim();
+
+          if (f.mode === 'VALUES') {
+            if (!f.selectedValues.has(val)) return false;
+          } else if (f.mode === 'TEXT') {
+            const vLow = val.toLowerCase();
+            const kwLow = f.keyword.toLowerCase();
+            switch (f.op) {
+              case 'CONTAINS': if (!vLow.includes(kwLow)) return false; break;
+              case 'NOT_CONTAINS': if (vLow.includes(kwLow)) return false; break;
+              case 'EQUALS': if (vLow !== kwLow) return false; break;
+              case 'NOT_EQUALS': if (vLow === kwLow) return false; break;
+              case 'STARTS_WITH': if (!vLow.startsWith(kwLow)) return false; break;
+              case 'ENDS_WITH': if (!vLow.endsWith(kwLow)) return false; break;
+            }
+          }
+        }
+
+        // 3. Global search check
+        if (state.globalSearch) {
+          let hasMatch = false;
+          for (const k in row) {
+            if (k !== '_id' && String(row[k]).toLowerCase().includes(state.globalSearch)) {
+              hasMatch = true;
+              break;
+            }
+          }
+          if (!hasMatch) return false;
+        }
+
+        return true;
+      });
+
+      // Count occurrences in qualifying rows (pisahkan nilai terisi dan blanks/kosong)
+      const valCounts = new Map();
+      let blankCount = 0;
+      qualifyingRows.forEach(row => {
+        const rawVal = row[col];
+        if (rawVal === undefined || rawVal === null || String(rawVal).trim() === '') {
+          blankCount++;
+        } else {
+          const val = String(rawVal).trim();
+          valCounts.set(val, (valCounts.get(val) || 0) + 1);
+        }
+      });
+
+      // Sort non-blank keys secara alfabetis A-Z
+      const sortedKeys = Array.from(valCounts.keys()).sort((a, b) => {
+        return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+      });
+
+      // SELALU tambahkan '(Kosong)' / blanks di paling bawah persis seperti native Excel AutoFilter!
+      sortedKeys.push('(Kosong)');
+      valCounts.set('(Kosong)', blankCount);
+
+      const activeF = state.activeFilters[col];
+      const isCustomValues = activeF && activeF.mode === 'VALUES';
+      const selectedSet = isCustomValues ? activeF.selectedValues : null;
+
+      sortedKeys.forEach(val => {
+        const count = valCounts.get(val) || 0;
+        const isChecked = selectedSet ? selectedSet.has(val) : true;
+        const isBlankItem = (val === '(Kosong)');
+
+        const label = document.createElement('label');
+        label.className = 'tree-branch flex items-center justify-between py-1 px-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer popup-tree-item';
+        label.dataset.val = isBlankItem ? '(kosong) blanks kosong blank' : val.toLowerCase();
+
+        label.innerHTML = `
+          <div class="flex items-center gap-2 pl-3 truncate">
+            <input type="checkbox" value="${encodeURIComponent(val)}" ${isChecked ? 'checked' : ''} class="popup-val-chk rounded text-emerald-600 focus:ring-emerald-500">
+            <span class="truncate ${isBlankItem ? 'italic text-slate-500 dark:text-slate-400 font-semibold' : 'text-slate-800 dark:text-slate-100 font-medium'}">
+              ${escapeHtml(val)}
+            </span>
+          </div>
+          <span class="text-[10px] text-slate-400 font-mono-code ml-1">(${count.toLocaleString('id-ID')})</span>
+        `;
+
+        label.querySelector('input').addEventListener('change', updatePopupSelectAllState);
+        container.appendChild(label);
+      });
+
+      updatePopupSelectAllState();
+    }
+
+    function updatePopupSelectAllState() {
+      const allChks = document.querySelectorAll('#popupValuesTree .popup-val-chk');
+      const checkedChks = document.querySelectorAll('#popupValuesTree .popup-val-chk:checked');
+      const selectAll = document.getElementById('popupChkSelectAll');
+
+      if (checkedChks.length === allChks.length) {
+        selectAll.checked = true;
+        selectAll.indeterminate = false;
+      } else if (checkedChks.length === 0) {
+        selectAll.checked = false;
+        selectAll.indeterminate = false;
+      } else {
+        selectAll.checked = false;
+        selectAll.indeterminate = true;
+      }
+    }
+
+    // =========================================================================
+    // MASTER FILTERING ENGINE (AND LOGIC ACROSS ALL COLUMNS + DATE FILTER)
+    // =========================================================================
+    function applyAllFilters() {
+      if (!state.dataRows || state.dataRows.length === 0) {
+        state.filteredRows = [];
+        renderTable();
+        return;
+      }
+
+      state.filteredRows = state.dataRows.filter(row => {
+        // 1. Date Period Filter evaluation
+        if (!matchDatePeriod(row)) return false;
+
+        // 2. Evaluate all active column filters
+        for (const col in state.activeFilters) {
+          const f = state.activeFilters[col];
+          const rawVal = row[col];
+          const isBlank = rawVal === undefined || rawVal === null || String(rawVal).trim() === '';
+          const val = isBlank ? '(Kosong)' : String(rawVal).trim();
+
+          if (f.mode === 'VALUES') {
+            if (!f.selectedValues.has(val)) return false;
+          } else if (f.mode === 'TEXT') {
+            const vLow = val.toLowerCase();
+            const kwLow = f.keyword.toLowerCase();
+            switch (f.op) {
+              case 'CONTAINS': if (!vLow.includes(kwLow)) return false; break;
+              case 'NOT_CONTAINS': if (vLow.includes(kwLow)) return false; break;
+              case 'EQUALS': if (vLow !== kwLow) return false; break;
+              case 'NOT_EQUALS': if (vLow === kwLow) return false; break;
+              case 'STARTS_WITH': if (!vLow.startsWith(kwLow)) return false; break;
+              case 'ENDS_WITH': if (!vLow.endsWith(kwLow)) return false; break;
+            }
+          }
+        }
+
+        // 3. Global Search
+        if (state.globalSearch) {
+          let hasMatch = false;
+          for (const k in row) {
+            if (k !== '_id' && String(row[k]).toLowerCase().includes(state.globalSearch)) {
+              hasMatch = true;
+              break;
+            }
+          }
+          if (!hasMatch) return false;
+        }
+
+        return true;
+      });
+
+      // Update Top Status & Badges
+      updateStatusCounters();
+      updateColumnFilterBarUI();
+      updateActiveFilterPillsUI();
+
+      state.currentPage = 1;
+      renderTable();
+    }
+
+    function matchDatePeriod(row) {
+      if (state.dateMode === 'ALL') return true;
+
+      const rowDateVal = row[state.dateColumn];
+      if (!rowDateVal) return false;
+
+      if (state.dateMode === 'DAY') {
+        return rowDateVal === state.dateDayVal;
+      } else if (state.dateMode === 'WEEK') {
+        const weeksList = state.dynamicWeeks || [];
+        const currWeek = weeksList[state.dateWeekIdx] || weeksList[0];
+        if (!currWeek) return true;
+        const rowD = parseFlexDate(rowDateVal);
+        if (!rowD) return false;
+        const rowIso = toDateKey(rowD);
+        return rowIso >= currWeek.start && rowIso <= currWeek.end;
+      } else if (state.dateMode === 'RANGE') {
+        const rowD = parseFlexDate(rowDateVal);
+        if (!rowD) return false;
+        const rowIso = toDateKey(rowD);
+        const s = state.dateRangeStart || '1900-01-01';
+        const e = state.dateRangeEnd || '2099-12-31';
+        return rowIso >= s && rowIso <= e;
+      }
+
+      return true;
+    }
+
+    function parseFlexDate(val) {
+      if (!val && val !== 0) return null;
+      if (val instanceof Date) return isNaN(val.getTime()) ? null : val;
+      
+      const s = String(val).trim();
+      if (!s) return null;
+
+      const parts = s.split(' ')[0].split('/');
+      if (parts.length === 3) {
+        const m = parseInt(parts[0], 10) - 1;
+        const d = parseInt(parts[1], 10);
+        let y = parseInt(parts[2], 10);
+        if (y < 100) y += 2000;
+        const res = new Date(y, m, d);
+        if (!isNaN(res.getTime())) return res;
+      }
+
+      const dashParts = s.split(' ')[0].split('-');
+      if (dashParts.length === 3 && dashParts[0].length === 4) {
+        const res = new Date(parseInt(dashParts[0], 10), parseInt(dashParts[1], 10) - 1, parseInt(dashParts[2], 10));
+        if (!isNaN(res.getTime())) return res;
+      }
+
+      const dt = new Date(s);
+      return isNaN(dt.getTime()) ? null : dt;
+    }
+
+    function toDateKey(date) {
+      if (!date) return '';
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function updateStatusCounters() {
+      const total = state.dataRows.length;
+      const matched = state.filteredRows.length;
+
+      document.getElementById('kpiMatchedCount').textContent = matched.toLocaleString('id-ID');
+      document.getElementById('kpiTotalCount').textContent = total.toLocaleString('id-ID');
+
+      let countGO = 0;
+      let countNoGO = 0;
+      state.filteredRows.forEach(r => {
+        const act = (r['ACTION'] || '').toUpperCase();
+        if (act === 'GO') countGO++;
+        else if (act === 'NO GO') countNoGO++;
+      });
+
+      document.getElementById('kpiCountGO').textContent = countGO.toLocaleString('id-ID');
+      document.getElementById('kpiCountNoGO').textContent = countNoGO.toLocaleString('id-ID');
+    }
+
+    function updateActiveFilterPillsUI() {
+      const container = document.getElementById('activeFilterTagsBar');
+      container.innerHTML = '<span class="text-xs text-slate-400 font-semibold">Filter Aktif:</span>';
+
+      let count = 0;
+
+      // Date pill
+      if (state.dateMode !== 'ALL') {
+        count++;
+        const pill = document.createElement('span');
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800';
+        
+        let label = '';
+        if (state.dateMode === 'DAY') label = `Harian: ${state.dateDayVal}`;
+        else if (state.dateMode === 'WEEK') {
+          const w = (state.dynamicWeeks && state.dynamicWeeks[state.dateWeekIdx]) || {};
+          label = `${w.name || 'Minggu'} (${w.label || ''})`;
+        } else if (state.dateMode === 'RANGE') {
+          label = `Rentang: ${state.dateRangeStart} s/d ${state.dateRangeEnd}`;
+        }
+
+        pill.innerHTML = `
+          <span>📅 <b>Periode:</b> ${escapeHtml(label)}</span>
+          <button class="hover:text-red-500 font-bold ml-1 text-sm" title="Hapus Filter Tanggal">&times;</button>
+        `;
+        pill.querySelector('button').addEventListener('click', () => {
+          setDateMode('ALL');
+        });
+        container.appendChild(pill);
+      }
+
+      // Column filter pills
+      for (const col in state.activeFilters) {
+        count++;
+        const f = state.activeFilters[col];
+        const pill = document.createElement('span');
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-900 dark:bg-emerald-950/80 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800';
+
+        let desc = '';
+        if (f.mode === 'VALUES') {
+          const vals = Array.from(f.selectedValues);
+          desc = `${vals.slice(0, 2).join(', ')}${vals.length > 2 ? ` (+${vals.length - 2})` : ''}`;
+        } else if (f.mode === 'TEXT') {
+          desc = `${f.op} "${f.keyword}"`;
+        }
+
+        pill.innerHTML = `
+          <span><b>${escapeHtml(col)}:</b> ${escapeHtml(desc)}</span>
+          <button class="hover:text-red-500 font-bold ml-1 text-sm" title="Hapus Filter ${col}">&times;</button>
+        `;
+
+        pill.querySelector('button').addEventListener('click', () => {
+          delete state.activeFilters[col];
+          applyAllFilters();
+        });
+
+        container.appendChild(pill);
+      }
+
+      // Global search pill
+      if (state.globalSearch) {
+        count++;
+        const pill = document.createElement('span');
+        pill.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border border-amber-300 dark:border-amber-800';
+        pill.innerHTML = `
+          <span>🔍 Cari: "${escapeHtml(state.globalSearch)}"</span>
+          <button class="hover:text-red-500 font-bold ml-1 text-sm">&times;</button>
+        `;
+        pill.querySelector('button').addEventListener('click', () => {
+          state.globalSearch = '';
+          document.getElementById('inputGlobalSearch').value = '';
+          applyAllFilters();
+        });
+        container.appendChild(pill);
+      }
+
+      if (count === 0) {
+        const span = document.createElement('span');
+        span.className = 'text-xs text-slate-400 italic';
+        span.textContent = '(Belum ada filter yang dipilih - seluruh data tampil)';
+        container.appendChild(span);
+      }
+    }
+
+    function resetAllFilters() {
+      state.activeFilters = {};
+      state.dateMode = 'ALL';
+      setDateMode('ALL');
+      state.globalSearch = '';
+      document.getElementById('inputGlobalSearch').value = '';
+      applyAllFilters();
+    }
+
+    // =========================================================================
+    // TABLE RENDERING, SORTING & NATIVE EXCEL FILTER ICONS ON TABLE HEADERS
+    // =========================================================================
+    function renderTable() {
+      const theadRow = document.getElementById('tableHeaderRow');
+      const tbody = document.getElementById('tableBody');
+
+      if (!state.headers || state.headers.length === 0) {
+        theadRow.innerHTML = '<th class="p-3 text-center w-12 text-slate-400 font-normal">#</th><th class="p-3">Data Excel</th>';
+        tbody.innerHTML = '<tr><td colspan="15" class="p-8 text-center text-slate-400 italic">Belum ada data dimuat. Silakan pilih file Excel melalui kotak di atas.</td></tr>';
+        return;
+      }
+
+      theadRow.innerHTML = '<th class="p-3 text-center w-12 text-slate-400 font-normal">#</th>';
+
+      state.headers.forEach(h => {
+        const th = document.createElement('th');
+        th.className = 'p-2 sm:p-2.5 whitespace-nowrap text-slate-700 dark:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700 transition group select-none';
+
+        let sortIcon = '⇅';
+        if (state.sortCol === h) {
+          sortIcon = state.sortDir === 'asc' ? '▲' : '▼';
+        }
+
+        const isFiltered = !!state.activeFilters[h];
+
+        th.innerHTML = `
+          <div class="flex items-center justify-between gap-1.5">
+            <div class="flex items-center gap-1 cursor-pointer th-title-sort flex-1" title="Klik untuk mengurutkan ${escapeHtml(h)}">
+              <span class="font-bold">${escapeHtml(h)}</span>
+              <span class="text-[10px] text-slate-400 font-mono-code">${sortIcon}</span>
+            </div>
+            <button class="th-filter-btn p-1 rounded hover:bg-slate-300 dark:hover:bg-slate-600 transition ${isFiltered ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}" title="Filter ${escapeHtml(h)}">
+              <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+        `;
+
+        th.querySelector('.th-title-sort').addEventListener('click', () => {
+          if (state.sortCol === h) {
+            state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+          } else {
+            state.sortCol = h;
+            state.sortDir = 'asc';
+          }
+          renderTable();
+        });
+
+        th.querySelector('.th-filter-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          openExcelNativePopup(h, th.querySelector('.th-filter-btn'));
+        });
+
+        theadRow.appendChild(th);
+      });
+
+      // Sort
+      let rowsToRender = [...state.filteredRows];
+      if (state.sortCol) {
+        const c = state.sortCol;
+        const dir = state.sortDir === 'asc' ? 1 : -1;
+        rowsToRender.sort((a, b) => {
+          const valA = a[c] || '';
+          const valB = b[c] || '';
+          return valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' }) * dir;
+        });
+      }
+
+      // Paginate
+      const totalRows = rowsToRender.length;
+      const startIdx = (state.currentPage - 1) * state.pageSize;
+      const endIdx = Math.min(startIdx + state.pageSize, totalRows);
+      const pageSlice = rowsToRender.slice(startIdx, endIdx);
+
+      // Render Table Rows
+      if (pageSlice.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="${state.headers.length + 1}" class="p-12 text-center text-slate-400">
+              <p class="font-bold text-slate-600 dark:text-slate-300">Tidak ada baris yang cocok dengan kriteria filter.</p>
+              <button onclick="resetAllFilters()" class="text-xs text-emerald-600 dark:text-emerald-400 underline font-semibold mt-1">Reset Semua Filter</button>
+            </td>
+          </tr>
+        `;
+      } else {
+        tbody.innerHTML = '';
+        pageSlice.forEach((row, i) => {
+          const tr = document.createElement('tr');
+          tr.className = 'hover:bg-emerald-50/40 dark:hover:bg-slate-750 transition-colors';
+
+          const tdIdx = document.createElement('td');
+          tdIdx.className = 'p-2 sm:p-2.5 text-center text-slate-400 font-mono-code text-xs';
+          tdIdx.textContent = startIdx + i + 1;
+          tr.appendChild(tdIdx);
+
+          state.headers.forEach(h => {
+            const td = document.createElement('td');
+            td.className = 'p-2 sm:p-2.5 whitespace-nowrap text-slate-700 dark:text-slate-200';
+            td.innerHTML = formatTableCell(h, row[h]);
+            tr.appendChild(td);
+          });
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Pagination UI
+      const totalPages = Math.max(1, Math.ceil(totalRows / state.pageSize));
+      document.getElementById('pageInfoText').textContent = `Menampilkan ${totalRows === 0 ? 0 : startIdx + 1} - ${endIdx} dari ${totalRows.toLocaleString('id-ID')} data`;
+      document.getElementById('pageCurrentIndicator').textContent = `${state.currentPage} / ${totalPages}`;
+      document.getElementById('btnPrevPage').disabled = state.currentPage <= 1;
+      document.getElementById('btnNextPage').disabled = state.currentPage >= totalPages;
+    }
+
+    function formatTableCell(header, val) {
+      if (val === undefined || val === null || String(val).trim() === '') {
+        return '<span class="text-slate-400 dark:text-slate-500 italic font-mono text-[11px]">(Kosong)</span>';
+      }
+
+      const hLow = header.toLowerCase();
+
+      // Action Badge (GO vs NO GO)
+      if (hLow === 'action') {
+        const vUp = val.toUpperCase();
+        if (vUp === 'GO') {
+          return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300">GO</span>`;
+        } else if (vUp === 'NO GO') {
+          return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300">NO GO</span>`;
+        }
+      }
+
+      // Jenis Sewa Badge (matching user image: allin, bantuan, pertashop, polatarif)
+      if (hLow === 'jenis sewa') {
+        const v = val.toLowerCase();
+        if (v === 'allin') {
+          return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">allin</span>`;
+        } else if (v === 'bantuan') {
+          return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">bantuan</span>`;
+        } else if (v === 'pertashop') {
+          return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">pertashop</span>`;
+        } else if (v === 'polatarif') {
+          return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-teal-100 text-teal-800 dark:bg-teal-950/60 dark:text-teal-300">polatarif</span>`;
+        }
+      }
+
+      // No Polisi
+      if (hLow.includes('polisi') || hLow.includes('nopol')) {
+        return `<span class="font-mono-code font-bold text-slate-800 dark:text-slate-100">${escapeHtml(val)}</span>`;
+      }
+
+      // Tanggal
+      if (hLow.includes('tanggal') || hLow.includes('date')) {
+        return `<span class="font-mono-code text-xs text-slate-600 dark:text-slate-300">${escapeHtml(val)}</span>`;
+      }
+
+      return escapeHtml(val);
+    }
+
+    // =========================================================================
+    // EXPORT ENGINE (TIDAK POLOSAN - PERSIS TEMPLATE ASLI DENGAN KOP & HEADER UTUH)
+    // =========================================================================
+    function isPretripInspection() {
+      if (state.isXmlSpreadsheet && state.xmlHeader && state.xmlHeader.includes('PRETRIP')) return true;
+      if (state.workbook && state.currentSheet) {
+        const sheet = state.workbook.Sheets[state.currentSheet];
+        if (sheet && sheet['B2'] && String(sheet['B2'].v || '').toUpperCase().includes('PRETRIP')) return true;
+      }
+      if (state.headers && state.headers.includes('NO. POLISI') && state.headers.includes('JENIS SEWA')) return true;
+      return false;
+    }
+
+    function escapeXml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;');
+    }
+
+    function formatOriginalXmlRow(rawRowXml, seqNum) {
+      const isOdd = (seqNum % 2 === 1);
+      let xml = rawRowXml;
+
+      // Update nomor urut di Cell Index="2"
+      xml = xml.replace(/(<Cell ss:Index="2" ss:StyleID=")[^"]*(">([\s\S]*?)<Data ss:Type="Number">)[^<]*(<\/Data>)/, (match, p1, p2, p3) => {
+        const style = isOdd ? '30' : '40';
+        return `${p1}${style}${p2}${seqNum}.0${p3}`;
+      });
+
+      // Normalisasi zebra styling (selang-seling baris ganjil & genap rapi)
+      if (isOdd) {
+        xml = xml
+          .replace(/ss:StyleID="40"/g, 'ss:StyleID="30"')
+          .replace(/ss:StyleID="42"/g, 'ss:StyleID="32"')
+          .replace(/ss:StyleID="44"/g, 'ss:StyleID="34"')
+          .replace(/ss:StyleID="46"/g, 'ss:StyleID="36"')
+          .replace(/ss:StyleID="48"/g, 'ss:StyleID="38"');
+      } else {
+        xml = xml
+          .replace(/ss:StyleID="30"/g, 'ss:StyleID="40"')
+          .replace(/ss:StyleID="32"/g, 'ss:StyleID="42"')
+          .replace(/ss:StyleID="34"/g, 'ss:StyleID="44"')
+          .replace(/ss:StyleID="36"/g, 'ss:StyleID="46"')
+          .replace(/ss:StyleID="38"/g, 'ss:StyleID="48"');
+      }
+
+      return xml;
+    }
+
+    function synthesizePretripXmlRow(rowObj, seqNum) {
+      const isOdd = (seqNum % 2 === 1);
+      const numStyle = isOdd ? '30' : '40';
+      const nopolStyle = isOdd ? '32' : '42';
+      const generalStyle = isOdd ? '34' : '44';
+      const dateStyle = isOdd ? '36' : '46';
+      const textStyle = isOdd ? '38' : '48';
+
+      const nopol = rowObj['NO. POLISI'] || '';
+      const jenis = rowObj['JENIS SEWA'] || '';
+      const kl = rowObj['KL'] || '';
+      const tgl = rowObj['TANGGAL PERIKSA'] || '';
+      const action = rowObj['ACTION'] || '';
+      const amt = rowObj['AMT'] || '';
+      const itemRusak = rowObj['Item Rusak'] || rowObj['ITEM RUSAK'] || '';
+      const ket = rowObj['Keterangan'] || rowObj['KETERANGAN'] || '';
+      const href = rowObj._href ? ` ss:HRef="${escapeXml(rowObj._href)}"` : '';
+
+      const dateType = (typeof tgl === 'string' && tgl.includes('T')) ? 'DateTime' : 'String';
+
+      return `\t\t<Row ss:AutoFitHeight="1">
+\t\t\t<Cell ss:Index="2" ss:StyleID="${numStyle}">
+\t\t\t\t<Data ss:Type="Number">${seqNum}.0</Data>
+\t\t\t</Cell>
+\t\t\t<Cell ss:Index="3" ss:StyleID="${nopolStyle}"${href}>
+\t\t\t\t<Data ss:Type="String">${escapeXml(nopol)}</Data>
+\t\t\t</Cell>
+\t\t\t<Cell ss:Index="4" ss:StyleID="${generalStyle}">
+\t\t\t\t<Data ss:Type="String">${escapeXml(jenis)}</Data>
+\t\t\t</Cell>
+\t\t\t<Cell ss:Index="5" ss:StyleID="${generalStyle}">
+\t\t\t\t<Data ss:Type="String">${escapeXml(kl)}</Data>
+\t\t\t</Cell>
+\t\t\t<Cell ss:Index="6" ss:StyleID="${dateStyle}" ss:MergeAcross="1">
+\t\t\t\t<Data ss:Type="${dateType}">${escapeXml(tgl)}</Data>
+\t\t\t</Cell>
+\t\t\t<Cell ss:Index="8" ss:StyleID="${generalStyle}">
+\t\t\t\t<Data ss:Type="String">${escapeXml(action)}</Data>
+\t\t\t</Cell>
+\t\t\t<Cell ss:Index="9" ss:StyleID="${textStyle}" ss:MergeAcross="1">
+\t\t\t\t<Data ss:Type="String">${escapeXml(amt)}</Data>
+\t\t\t</Cell>
+\t\t\t<Cell ss:Index="11" ss:StyleID="${textStyle}">
+\t\t\t\t<Data ss:Type="String">${escapeXml(itemRusak)}</Data>
+\t\t\t</Cell>
+\t\t\t<Cell ss:Index="12" ss:StyleID="${textStyle}" ss:MergeAcross="2">
+\t\t\t\t<Data ss:Type="String">${escapeXml(ket)}</Data>
+\t\t\t</Cell>
+\t\t</Row>`;
+    }
+
+    function buildFilteredXmlSpreadsheet(dateLabel, rows) {
+      let header = state.xmlHeader;
+      let footer = state.xmlFooter;
+
+      if (!header && window.DEFAULT_PRETRIP_TEMPLATE) {
+        header = window.DEFAULT_PRETRIP_TEMPLATE.header;
+        footer = window.DEFAULT_PRETRIP_TEMPLATE.footer;
+      }
+
+      if (!header) return null;
+
+      // 1. Update nilai tanggal di Kop (Baris 5: DATE)
+      if (dateLabel) {
+        header = header.replace(
+          /(<Cell ss:Index="4" ss:StyleID="25" ss:MergeAcross="10">([\s\S]*?)<Data ss:Type="String">)[^<]*(<\/Data>)/,
+          `$1: ${escapeXml(dateLabel)}$2`
+        );
+      }
+
+      // 2. Update border garis vertikal (MergeDown) agar membentang pas sesuai jumlah baris
+      const mergeDownVal = Math.max(1, rows.length + 2);
+      header = header.replace(/ss:MergeDown="\d+"/g, `ss:MergeDown="${mergeDownVal}"`);
+
+      // 3. Format atau sintesis seluruh baris data terfilter
+      const rowXmlList = rows.map((rowObj, idx) => {
+        const seqNum = idx + 1;
+        if (state.xmlRows && rowObj._id !== undefined && state.xmlRows[rowObj._id]) {
+          return formatOriginalXmlRow(state.xmlRows[rowObj._id], seqNum);
+        } else {
+          return synthesizePretripXmlRow(rowObj, seqNum);
+        }
+      });
+
+      return header + '\n' + rowXmlList.join('\n') + '\n\t' + footer;
+    }
+
+    function triggerFileDownload(blobOrString, fileName, mimeType = 'application/vnd.ms-excel;charset=utf-8') {
+      const blob = (typeof blobOrString === 'string') 
+        ? new Blob([blobOrString], { type: mimeType }) 
+        : blobOrString;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function createFormattedFilteredWorkbook(sourceWb, targetDateLabel, rows) {
+      const sourceSheetName = state.currentSheet || 'Checklist Harian';
+      const sourceSheet = sourceWb.Sheets[sourceSheetName] || sourceWb.Sheets[sourceWb.SheetNames[0]];
+      const newSheet = {};
+
+      const isPretripTemplate = isPretripInspection();
+
+      if (isPretripTemplate) {
+        for (const cellAddress in sourceSheet) {
+          if (cellAddress.startsWith('!')) continue;
+          const match = cellAddress.match(/^([A-Z]+)(\d+)$/);
+          if (!match) continue;
+          const row = parseInt(match[2], 10);
+          if (row <= 8) {
+            newSheet[cellAddress] = Object.assign({}, sourceSheet[cellAddress]);
+          }
+        }
+
+        if (targetDateLabel && newSheet['D5']) {
+          newSheet['D5'].v = ': ' + targetDateLabel;
+          newSheet['D5'].w = ': ' + targetDateLabel;
+        }
+
+        const sourceMerges = sourceSheet['!merges'] || [];
+        const newMerges = sourceMerges.filter(m => m.s.r <= 7).map(m => Object.assign({}, m));
+
+        rows.forEach((rowObj, idx) => {
+          const r = 9 + idx;
+          const rIdx = 8 + idx;
+
+          newSheet['B' + r] = { t: 'n', v: idx + 1, w: String(idx + 1) };
+          newSheet['C' + r] = { t: 's', v: rowObj['NO. POLISI'] || '', w: rowObj['NO. POLISI'] || '' };
+          newSheet['D' + r] = { t: 's', v: rowObj['JENIS SEWA'] || '', w: rowObj['JENIS SEWA'] || '' };
+          newSheet['E' + r] = { t: 's', v: rowObj['KL'] || '', w: rowObj['KL'] || '' };
+          newSheet['F' + r] = { t: 's', v: rowObj['TANGGAL PERIKSA'] || '', w: rowObj['TANGGAL PERIKSA'] || '' };
+          newSheet['H' + r] = { t: 's', v: rowObj['ACTION'] || '', w: rowObj['ACTION'] || '' };
+          newSheet['I' + r] = { t: 's', v: rowObj['AMT'] || '', w: rowObj['AMT'] || '' };
+          newSheet['K' + r] = { t: 's', v: rowObj['Item Rusak'] || '', w: rowObj['Item Rusak'] || '' };
+          newSheet['L' + r] = { t: 's', v: rowObj['Keterangan'] || '', w: rowObj['Keterangan'] || '' };
+
+          newMerges.push({ s: { r: rIdx, c: 5 }, e: { r: rIdx, c: 6 } });
+          newMerges.push({ s: { r: rIdx, c: 8 }, e: { r: rIdx, c: 9 } });
+          newMerges.push({ s: { r: rIdx, c: 11 }, e: { r: rIdx, c: 13 } });
+        });
+
+        const lastRowNum = Math.max(8, 8 + rows.length);
+        newSheet['!ref'] = 'A1:P' + lastRowNum;
+        newSheet['!merges'] = newMerges;
+        newSheet['!cols'] = sourceSheet['!cols'] ? sourceSheet['!cols'].slice() : [];
+      } else {
+        const headerRowLimit = state.headerRow || 1;
+        for (const cellAddress in sourceSheet) {
+          if (cellAddress.startsWith('!')) continue;
+          const match = cellAddress.match(/^([A-Z]+)(\d+)$/);
+          if (!match) continue;
+          const row = parseInt(match[2], 10);
+          if (row <= headerRowLimit) {
+            newSheet[cellAddress] = Object.assign({}, sourceSheet[cellAddress]);
+          }
+        }
+
+        const sourceMerges = sourceSheet['!merges'] || [];
+        const newMerges = sourceMerges.filter(m => m.s.r < headerRowLimit).map(m => Object.assign({}, m));
+
+        rows.forEach((rowObj, idx) => {
+          const r = headerRowLimit + 1 + idx;
+          state.headers.forEach((h, colIdx) => {
+            const realCol = state.colIndices[colIdx];
+            const cellAddr = XLSX.utils.encode_cell({ r: r - 1, c: realCol });
+            const val = rowObj[h] || '';
+            newSheet[cellAddr] = { t: 's', v: val, w: String(val) };
+          });
+        });
+
+        const maxCol = state.colIndices && state.colIndices.length > 0 ? Math.max(...state.colIndices) : 10;
+        const lastRowNum = headerRowLimit + rows.length;
+        newSheet['!ref'] = 'A1:' + XLSX.utils.encode_cell({ r: lastRowNum, c: maxCol });
+        newSheet['!merges'] = newMerges;
+        newSheet['!cols'] = sourceSheet['!cols'] ? sourceSheet['!cols'].slice() : [];
+      }
+
+      const newWb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(newWb, newSheet, sourceSheetName);
+      return newWb;
+    }
+
+    // 1. Ekspor Single Terfilter (Format Asli 100% Identik)
+    function exportFormattedWorkbookSingle() {
+      if (!state.filteredRows || state.filteredRows.length === 0) {
+        alert('Tidak ada baris data yang cocok untuk diekspor.');
+        return;
+      }
+
+      let dateLabel = '';
+      if (state.dateMode === 'DAY') dateLabel = state.dateDayVal;
+      else if (state.dateMode === 'WEEK') {
+        const w = (state.dynamicWeeks && state.dynamicWeeks[state.dateWeekIdx]) || {};
+        dateLabel = w.label || '';
+      }
+      else if (state.dateMode === 'RANGE') dateLabel = `${state.dateRangeStart} s/d ${state.dateRangeEnd}`;
+      else dateLabel = 'Semua Periode';
+
+      const baseName = state.fileName ? state.fileName.replace(/\.[^/.]+$/, "") : 'Checklist_Pretrip';
+      const dateTag = state.dateDayVal ? state.dateDayVal.replace(/\//g, '-') : new Date().toISOString().slice(0, 10);
+
+      // Jika format Pretrip / XML Template, ekspor dengan format asli BIRT (Kop, style, font, warna, border)
+      if (isPretripInspection()) {
+        const xmlStr = buildFilteredXmlSpreadsheet(dateLabel, state.filteredRows);
+        if (xmlStr) {
+          const outFileName = `${baseName}_Filtered_${dateTag}.xls`;
+          triggerFileDownload(xmlStr, outFileName, 'application/vnd.ms-excel;charset=utf-8');
+          return;
+        }
+      }
+
+      // Fallback SheetJS untuk file Excel umum lainnya
+      const newWb = createFormattedFilteredWorkbook(state.workbook, dateLabel, state.filteredRows);
+      const isXlsx = state.fileName && state.fileName.toLowerCase().endsWith('.xlsx');
+      const ext = isXlsx ? 'xlsx' : 'xls';
+      const bType = isXlsx ? 'xlsx' : 'biff8';
+      const outFileName = `${baseName}_Filtered_${dateTag}.${ext}`;
+
+      XLSX.writeFile(newWb, outFileName, { bookType: bType });
+    }
+
+    // 2. Batch Split Per Hari -> Download ZIP (Format Asli 100% Identik)
+    async function exportSplitDailyZip() {
+      if (!state.dataRows || state.dataRows.length === 0) return;
+
+      const btn = document.getElementById('btnSplitDailyZip');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<span>⏳</span><span>Membuat ZIP Harian...</span>`;
+      btn.disabled = true;
+
+      try {
+        const rowsByDate = new Map();
+
+        state.dataRows.forEach(row => {
+          for (const col in state.activeFilters) {
+            const f = state.activeFilters[col];
+            const rawVal = row[col];
+            const isBlank = rawVal === undefined || rawVal === null || String(rawVal).trim() === '';
+            const val = isBlank ? '(Kosong)' : String(rawVal).trim();
+
+            if (f.mode === 'VALUES') {
+              if (!f.selectedValues.has(val)) return;
+            } else if (f.mode === 'TEXT') {
+              const vLow = val.toLowerCase();
+              const kwLow = f.keyword.toLowerCase();
+              if (f.op === 'CONTAINS' && !vLow.includes(kwLow)) return;
+            }
+          }
+
+          const dVal = row[state.dateColumn];
+          if (!dVal) return;
+          if (!rowsByDate.has(dVal)) rowsByDate.set(dVal, []);
+          rowsByDate.get(dVal).push(row);
+        });
+
+        if (rowsByDate.size === 0) {
+          alert('Tidak ada data yang cocok dengan kriteria filter.');
+          return;
+        }
+
+        const zip = new JSZip();
+        const baseName = state.fileName ? state.fileName.replace(/\.[^/.]+$/, "") : 'Checklist_Pretrip';
+        const isPretrip = isPretripInspection();
+        const isXlsx = state.fileName && state.fileName.toLowerCase().endsWith('.xlsx');
+        const ext = isPretrip ? 'xls' : (isXlsx ? 'xlsx' : 'xls');
+        const bType = isXlsx ? 'xlsx' : 'biff8';
+
+        rowsByDate.forEach((dayRows, dStr) => {
+          const parts = dStr.split('/');
+          let iso = dStr;
+          if (parts.length === 3) {
+            const m = parts[0].padStart(2, '0');
+            const d = parts[1].padStart(2, '0');
+            let y = parts[2];
+            if (y.length === 2) y = '20' + y;
+            iso = `${y}-${m}-${d}`;
+          }
+
+          if (isPretrip) {
+            const xmlStr = buildFilteredXmlSpreadsheet(iso, dayRows);
+            if (xmlStr) {
+              zip.file(`${baseName}_${iso}.${ext}`, xmlStr);
+              return;
+            }
+          }
+
+          const dayWb = createFormattedFilteredWorkbook(state.workbook, iso, dayRows);
+          const dayBytes = XLSX.write(dayWb, { type: 'array', bookType: bType });
+          zip.file(`${baseName}_${iso}.${ext}`, dayBytes);
+        });
+
+        const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+        triggerFileDownload(zipBlob, `${baseName}_Harian_ZIP.zip`, 'application/zip');
+
+      } catch (err) {
+        console.error('Gagal membuat ZIP harian:', err);
+        alert('Terjadi kesalahan saat membuat ZIP harian: ' + err.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    // 3. Batch Split Per Minggu -> Download ZIP (Format Asli 100% Identik)
+    async function exportSplitWeeklyZip() {
+      if (!state.dataRows || state.dataRows.length === 0) return;
+
+      const btn = document.getElementById('btnSplitWeeklyZip');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<span>⏳</span><span>Membuat ZIP Mingguan...</span>`;
+      btn.disabled = true;
+
+      try {
+        const zip = new JSZip();
+        const baseName = state.fileName ? state.fileName.replace(/\.[^/.]+$/, "") : 'Checklist_Pretrip';
+        const isPretrip = isPretripInspection();
+        const isXlsx = state.fileName && state.fileName.toLowerCase().endsWith('.xlsx');
+        const ext = isPretrip ? 'xls' : (isXlsx ? 'xlsx' : 'xls');
+        const bType = isXlsx ? 'xlsx' : 'biff8';
+        const weeksList = state.dynamicWeeks && state.dynamicWeeks.length > 0 ? state.dynamicWeeks : [];
+
+        weeksList.forEach((w) => {
+          const weekRows = state.dataRows.filter(row => {
+            for (const col in state.activeFilters) {
+              const f = state.activeFilters[col];
+              const rawVal = row[col];
+              const isBlank = rawVal === undefined || rawVal === null || String(rawVal).trim() === '';
+              const val = isBlank ? '(Kosong)' : String(rawVal).trim();
+              if (f.mode === 'VALUES' && !f.selectedValues.has(val)) return false;
+            }
+
+            const rowD = parseFlexDate(row[state.dateColumn]);
+            if (!rowD) return false;
+            const rowIso = toDateKey(rowD);
+            return rowIso >= w.start && rowIso <= w.end;
+          });
+
+          if (weekRows.length > 0) {
+            if (isPretrip) {
+              const xmlStr = buildFilteredXmlSpreadsheet(w.label, weekRows);
+              if (xmlStr) {
+                zip.file(`${baseName}_${w.name.replace(/\s+/g, '_')}_${w.start}_sd_${w.end}.${ext}`, xmlStr);
+                return;
+              }
+            }
+
+            const weekWb = createFormattedFilteredWorkbook(state.workbook, w.label, weekRows);
+            const weekBytes = XLSX.write(weekWb, { type: 'array', bookType: bType });
+            zip.file(`${baseName}_${w.name.replace(/\s+/g, '_')}_${w.start}_sd_${w.end}.${ext}`, weekBytes);
+          }
+        });
+
+        const zipBlob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+        triggerFileDownload(zipBlob, `${baseName}_Mingguan_ZIP.zip`, 'application/zip');
+
+      } catch (err) {
+        console.error('Gagal membuat ZIP mingguan:', err);
+        alert('Terjadi kesalahan saat membuat ZIP mingguan: ' + err.message);
+      } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+      }
+    }
+
+    function exportToCSV() {
+      if (!state.filteredRows || state.filteredRows.length === 0) return;
+      const exportData = state.filteredRows.map(row => {
+        const cleanObj = {};
+        state.headers.forEach(h => {
+          const val = row[h];
+          cleanObj[h] = (val !== undefined && val !== null && String(val).trim() !== '') ? val : '';
+        });
+        return cleanObj;
+      });
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const csv = XLSX.utils.sheet_to_csv(ws);
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `Export_Filtered_${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
